@@ -64,7 +64,6 @@ const songs = [
   { id: 150, title: "Teri Lat Lag Jagi", artist: "Sapna Choudhary", youtubeId: "UbmwKMGKiAc", category: "tractor" },
   { id: 151, title: "Tu Cheez Lajawab", artist: "Sapna Choudhary", youtubeId: "Houq_yjjWhQ", category: "tractor" },
   { id: 152, title: "Thada Bhartar", artist: "Sapna Choudhary", youtubeId: "Uq4dyDHgqAI", category: "tractor" },
-  { id: 153, title: "Mera Dhol Kuye Me", artist: "Sapna Choudhary", youtubeId: "pdaBMEBMKAs", category: "tractor" },
   { id: 154, title: "Gajban Pani Ne Challi", artist: "Sapna Choudhary", youtubeId: "MD2Or5ZxBSs", category: "tractor" },
   { id: 155, title: "English Medium", artist: "Sapna Choudhary", youtubeId: "URxsOjGMg4w", category: "tractor" },
   { id: 156, title: "Chatak Matak", artist: "Sapna Choudhary", youtubeId: "s9AICwTKgOg", category: "tractor" },
@@ -74,10 +73,9 @@ const songs = [
   { id: 160, title: "Chetak", artist: "Sapna Choudhary", youtubeId: "zlpTcgvTGEo", category: "tractor" },
   { id: 161, title: "Badli Badli Laage", artist: "Sapna Choudhary", youtubeId: "8eYdMMWghO0", category: "tractor" },
   { id: 162, title: "Bandook Chalgi", artist: "Sapna Choudhary", youtubeId: "85txbeyiXNI", category: "tractor" },
-  { id: 163, title: "Kidnap ho Javegi", artist: "Sapna Choudhary", youtubeId: "xUqsxA3ny9Y", category: "tractor" },
-  { id: 164, title: "Laad Piya Ke", artist: "Sapna Choudhary", youtubeId: "JdUXW69YYg0", category: "tractor" },
-  { id: 165, title: "4G Ka Jamana", artist: "Sapna Choudhary", youtubeId: "XjGEJDig1uo", category: "tractor" },
-  { id: 166, title: "Balam", artist: "Sapna Choudhary", youtubeId: "fXYJ68s7vfA", category: "tractor" },
+  { id: 163, title: "Laad Piya Ke", artist: "Sapna Choudhary", youtubeId: "JdUXW69YYg0", category: "tractor" },
+  { id: 164, title: "4G Ka Jamana", artist: "Sapna Choudhary", youtubeId: "XjGEJDig1uo", category: "tractor" },
+  { id: 165, title: "Balam", artist: "Sapna Choudhary", youtubeId: "fXYJ68s7vfA", category: "tractor" },
 ];
 
 function getCategoryMeta(categoryId) {

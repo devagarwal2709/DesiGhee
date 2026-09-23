@@ -51,7 +51,7 @@ const Player = (() => {
 
   let queue = [];              // the current (possibly filtered) list of songs
   let queueIndex = 0;          // where we are in `queue`
-  let shuffleOn = false;
+
   let volume = 70;
 
   let hasLoaded = false;       // has any song been requested from YouTube yet?
@@ -345,7 +345,9 @@ const Player = (() => {
     const n = queue.length;
     if (n === 0) return -1;
 
-    if (shuffleOn && direction > 0 && n > 1) {
+    // Every "next" is random — this is a radio-style shuffle-always player,
+    // there's no sequential/ordered mode to opt in or out of.
+    if (direction > 0 && n > 1) {
       const pool = [];
       for (let i = 0; i < n; i++) {
         if (i !== queueIndex && !failed.has(queue[i].youtubeId)) pool.push(i);
@@ -450,12 +452,6 @@ const Player = (() => {
     if (idx === -1) idx = (queueIndex - 1 + queue.length) % queue.length;
     queueIndex = idx;
     loadCurrent(true);
-  }
-
-  function toggleShuffle() {
-    shuffleOn = !shuffleOn;
-    emit("shuffle", { on: shuffleOn });
-    return shuffleOn;
   }
 
   function seekTo(seconds) {
@@ -591,10 +587,9 @@ const Player = (() => {
     togglePlay,
     next,
     prev,
-    toggleShuffle,
+
     seekTo,
     setVolume,
-    isShuffleOn: () => shuffleOn,
     isReady: () => ytReady,
     probeDurations,
   };

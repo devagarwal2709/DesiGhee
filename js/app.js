@@ -21,7 +21,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const playPauseBtn  = $("play-pause-btn");
   const prevBtn       = $("prev-btn");
   const nextBtn       = $("next-btn");
-  const shuffleBtn    = $("shuffle-btn");
   const seekBar       = $("seek-bar");
   const currentTimeEl = $("current-time");
   const durationEl    = $("duration-time");
@@ -246,11 +245,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 2500);
   });
 
-  Player.on("shuffle", ({ on }) => {
-    shuffleBtn.classList.toggle("is-active", on);
-    shuffleBtn.setAttribute("aria-pressed", on ? "true" : "false");
-  });
-
   Player.on("autoplayblocked", () => {
     showToast("ब्राउज़र ने गाना रोक दिया —", {
       action: { label: "▶ बैठ जा / गाना चलाओ", onClick: () => Player.togglePlay() },
@@ -282,7 +276,6 @@ document.addEventListener("DOMContentLoaded", () => {
   playPauseBtn.addEventListener("click", () => Player.togglePlay());
   nextBtn.addEventListener("click", () => Player.next());
   prevBtn.addEventListener("click", () => Player.prev());
-  shuffleBtn.addEventListener("click", () => Player.toggleShuffle());
 
   seekBar.addEventListener("input", () => {
     isSeeking = true;
@@ -381,6 +374,169 @@ document.addEventListener("DOMContentLoaded", () => {
     loop();
   }
 
+  // ---- Ember & Smoke Effect (lanterns, diyas, chulha, hookah, tractor) -------
+  // Unlike the free-floating jugnu fireflies above, every point here has to sit
+  // exactly on a lantern/flame/pipe painted in hero-village.png, so this reads
+  // the image's real object-position (which changes at the 640px breakpoint)
+  // and maps image-space pixel coordinates to canvas pixels the same way
+  // object-fit: cover does — then relies on #ember-canvas sharing the image's
+  // own "scene-drift" CSS animation (see style.css) to stay glued to it.
+  function initEmberEffect() {
+    const canvas = $("ember-canvas");
+    const scene  = $("scene");
+    const img    = document.querySelector(".scene__bg");
+    if (!canvas || !scene || !img || !canvas.getContext) return;
+    const ctx = canvas.getContext("2d");
+
+    const IMG_W = 1673, IMG_H = 940; // natural size of hero-village.png
+
+    // Every lantern/diya/chulha we could find in the artwork (image-space pixels).
+    const FLAMES = [
+      { x: 325, y: 195, r: 7 },  { x: 365, y: 165, r: 7 },     // tree lanterns
+      { x: 438, y: 255, r: 7 },  { x: 500, y: 270, r: 7 },
+      { x: 605, y: 310, r: 7 },
+      { x: 185, y: 460, r: 6 },  { x: 225, y: 425, r: 6 },     // dhaba wall lanterns
+      { x: 452, y: 468, r: 6 },
+      { x: 565, y: 832, r: 8 },                                 // ground lantern by the khaat
+      { x: 428, y: 662, r: 11 },                                // chulha fire — bigger, hotter
+      { x: 1305, y: 447, r: 6 }, { x: 1370, y: 442, r: 6 },     // near hut door lamps
+      { x: 1553, y: 452, r: 6 }, { x: 1636, y: 452, r: 6 },     // far hut door lamps
+      { x: 1165, y: 441, r: 4 },                                // distant hut lamp — small & dim
+    ].map((f, i) => ({
+      ...f,
+      u: f.x / IMG_W, v: f.y / IMG_H,
+      speed: 1.6 + Math.random() * 1.3,
+      speed2: 2.9 + Math.random() * 2.1,
+      phase: Math.random() * Math.PI * 2,
+      phase2: Math.random() * Math.PI * 2,
+    }));
+
+    // Smoke/steam sources — chulha, both hookahs, and a subtle tractor exhaust puff.
+    const SMOKE_SOURCES = [
+      { x: 400, y: 635, rate: 1.0,  drift: -0.15 },
+      { x: 655, y: 608, rate: 0.7,  drift: 0.05 },
+      { x: 1245, y: 615, rate: 0.7, drift: -0.05 },
+      { x: 700, y: 428, rate: 0.25, drift: 0.2 },
+    ].map((s) => ({ ...s, u: s.x / IMG_W, v: s.y / IMG_H, timer: Math.random() * 2 }));
+
+    let smokeParticles = [];
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    let W = 0, H = 0, ox = 0, oy = 0, dw = 0, dh = 0, scale = 1;
+    function layout() {
+      W = canvas.clientWidth; H = canvas.clientHeight;
+      if (!W || !H) return;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const s = Math.max(W / IMG_W, H / IMG_H);   // same math as object-fit: cover
+      dw = IMG_W * s; dh = IMG_H * s;
+      scale = s;
+
+      // Read the *actual* object-position (it changes at the 640px breakpoint,
+      // and swaps to a differently-cropped image below it too).
+      const pos = getComputedStyle(img).objectPosition.split(" ");
+      const px = parseFloat(pos[0]) / 100, py = parseFloat(pos[1]) / 100;
+      ox = (W - dw) * (isFinite(px) ? px : 0.5);
+      oy = (H - dh) * (isFinite(py) ? py : 0.5);
+    }
+
+    function spawnSmoke(src, t) {
+      smokeParticles.push({
+        x: ox + src.u * dw, y: oy + src.v * dh,
+        born: t, life: 4.5 + Math.random() * 2.5,
+        drift: src.drift + (Math.random() - 0.5) * 0.15,
+        sway: 0.4 + Math.random() * 0.5,
+        phase: Math.random() * Math.PI * 2,
+        size: (5 + Math.random() * 4) * scale,
+        riseSpeed: (10 + Math.random() * 6) * scale,
+      });
+    }
+
+    function draw(t, still) {
+      if (!W || !H) return;
+      ctx.clearRect(0, 0, W, H);
+
+      // ---- flame flicker: warm additive glow, two out-of-phase sine waves
+      //      (not one) so it reads as irregular candle-flicker, not a clean pulse ----
+      ctx.globalCompositeOperation = "lighter";
+      FLAMES.forEach((f) => {
+        const x = ox + f.u * dw, y = oy + f.v * dh;
+        if (x < -20 || y < -20 || x > W + 20 || y > H + 20) return;
+        let flick = still ? 0.7
+          : 0.55 + 0.28 * Math.sin(t * f.speed + f.phase) + 0.17 * Math.sin(t * f.speed2 + f.phase2);
+        flick = Math.max(0.25, Math.min(1, flick));
+        const r = f.r * scale * 4.2 * flick;
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+        grad.addColorStop(0.00, `rgba(255, 236, 180, ${0.55 * flick})`);
+        grad.addColorStop(0.30, `rgba(250, 180, 60, ${0.4 * flick})`);
+        grad.addColorStop(1.00, "rgba(234, 88, 12, 0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // ---- smoke: soft grey wisps, normal blending, rise + sway + fade ----
+      ctx.globalCompositeOperation = "source-over";
+      smokeParticles.forEach((p) => {
+        const age = t - p.born;
+        const life = age / p.life;
+        if (life >= 1) return;
+        const y = p.y - age * p.riseSpeed;
+        const x = p.x + Math.sin(age * p.sway + p.phase) * 8 * scale + age * p.drift * 10 * scale;
+        const alpha = (life < 0.15 ? life / 0.15 : 1 - (life - 0.15) / 0.85) * 0.22;
+        const r = p.size * (1 + life * 1.8);
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+        grad.addColorStop(0, `rgba(210, 205, 195, ${alpha})`);
+        grad.addColorStop(1, "rgba(210, 205, 195, 0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    let time = 0, last = 0, rafId = 0, heroVisible = true;
+    function frame(now) {
+      const dt = Math.min(0.1, (now - last) / 1000 || 0);
+      last = now;
+      time += dt;
+
+      SMOKE_SOURCES.forEach((src) => {
+        src.timer -= dt;
+        if (src.timer <= 0) {
+          spawnSmoke(src, time);
+          src.timer = (1.6 + Math.random() * 1.4) / src.rate;
+        }
+      });
+      smokeParticles = smokeParticles.filter((p) => time - p.born < p.life);
+      if (smokeParticles.length > 60) smokeParticles.splice(0, smokeParticles.length - 60);
+
+      draw(time, false);
+      rafId = requestAnimationFrame(frame);
+    }
+    function update() {
+      const shouldRun = heroVisible && !document.hidden && !reduceMotion.matches;
+      if (shouldRun && !rafId) { last = performance.now(); rafId = requestAnimationFrame(frame); }
+      if (!shouldRun && rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+      if (reduceMotion.matches) { layout(); draw(1, true); }   // one calm still frame
+    }
+
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver((entries) => { heroVisible = entries[0].isIntersecting; update(); }).observe(scene);
+    }
+    document.addEventListener("visibilitychange", update);
+    if (reduceMotion.addEventListener) reduceMotion.addEventListener("change", update);
+    if ("ResizeObserver" in window) new ResizeObserver(layout).observe(canvas);
+    window.addEventListener("resize", layout);
+
+    layout();
+    update();
+  }
+
   // ---- Boot ------------------------------------------------------------------
   applyVolume(Number(volumeSlider.value));
   paintRange(seekBar);
@@ -392,4 +548,5 @@ document.addEventListener("DOMContentLoaded", () => {
   renderChips();
   renderMoodCards();
   initJugnuEffect();
+  initEmberEffect();
 });
