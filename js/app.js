@@ -38,13 +38,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Visual background positioning for the 3x2 mood cards
   const MOOD_ART = {
-    all:     { size: "cover", pos: "50% 45%" },
-    banger:  { size: "260% auto", pos: "13% 75%" },
-    tractor: { size: "300% auto", pos: "52% 60%" },
-    hukka:   { size: "260% auto", pos: "89% 88%" },
-    byah:    { size: "300% auto", pos: "16% 11%" },
-    akhada:  { size: "340% auto", pos: "62% 100%" },
-  };
+  all:     "assets/images/mood-all.jpg",
+  banger:  "assets/images/mood-banger.jpg",
+  tractor: "assets/images/mood-tractor.jpg",
+  hukka:   "assets/images/mood-hukka.jpg",
+  byah:    "assets/images/mood-byah.jpg",
+  akhada:  "assets/images/mood-akhada.jpg",
+};
 
   let activeCategory = "all";
   let isSeeking = false;
@@ -151,23 +151,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Change #4: Mood cards render cleanly without "15 गाने" / "जल्दी आ रहे हैं"
   function renderMoodCards() {
-    moodGrid.innerHTML = "";
-    allCategories().forEach((cat) => {
-      const art = MOOD_ART[cat.id] || MOOD_ART.all;
-      const card = document.createElement("button");
-      card.type = "button";
-      card.className = "mood-card" + (cat.id === activeCategory ? " mood-card--active" : "");
-      card.setAttribute("aria-pressed", cat.id === activeCategory ? "true" : "false");
-      card.innerHTML = `
-        <span class="mood-card__bg" style="--size:${art.size}; --pos:${art.pos}" aria-hidden="true"></span>
-        <span class="mood-card__icon" aria-hidden="true">${cat.emoji}</span>
-        <span class="mood-card__text">
-          <span class="mood-card__label">${cat.label}</span>
-        </span>`;
-      card.addEventListener("click", () => selectCategory(cat.id));
-      moodGrid.appendChild(card);
-    });
-  }
+  moodGrid.innerHTML = "";
+  allCategories().forEach((cat) => {
+    const bgUrl = MOOD_ART[cat.id] || MOOD_ART.all;
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "mood-card" + (cat.id === activeCategory ? " mood-card--active" : "");
+    card.setAttribute("aria-pressed", cat.id === activeCategory ? "true" : "false");
+    card.innerHTML = `
+      <span class="mood-card__bg" style="background-image: url('${bgUrl}');" aria-hidden="true"></span>
+      <span class="mood-card__icon" aria-hidden="true">${cat.emoji}</span>
+      <span class="mood-card__text">
+        <span class="mood-card__label">${cat.label}</span>
+      </span>`;
+    card.addEventListener("click", () => selectCategory(cat.id));
+    moodGrid.appendChild(card);
+  });
+}
 
   // Instant Radio-Style Playback
   function selectCategory(catId) {
