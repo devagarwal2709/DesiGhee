@@ -38,12 +38,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Visual background positioning for the 3x2 mood cards
   const MOOD_ART = {
-  all:     "assets/images/mood-all.jpg",
-  banger:  "assets/images/mood-banger.jpg",
-  tractor: "assets/images/mood-tractor.jpg",
-  hukka:   "assets/images/mood-hukka.jpg",
-  byah:    "assets/images/mood-byah.jpg",
-  akhada:  "assets/images/mood-akhada.jpg",
+  all:     "assets/images/mood-all.webp",
+  banger:  "assets/images/mood-banger.webp",
+  tractor: "assets/images/mood-tractor.webp",
+  hukka:   "assets/images/mood-hukka.webp",
+  byah:    "assets/images/mood-byah.webp",
+  akhada:  "assets/images/mood-akhada.webp",
 };
 
   let activeCategory = "all";

@@ -11,7 +11,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Tiro+Devanagari+Hindi&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-<link rel="preload" as="image" href="assets/images/hero-village.png" />
+<link rel="preload" as="image" href="assets/images/hero-village.webp" media="(min-width: 641px)" />
+<link rel="preload" as="image" href="assets/images/hero-village-mobile.webp" media="(max-width: 640px)" />
 
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
@@ -36,12 +37,12 @@
 <!-- ============================================================
      HERO / SCENE (Change #1: Removed .scroll-cue)
      ============================================================ -->
-<header class="scene" id="scene">
-  <picture class="scene__picture">
-    <source media="(max-width: 640px)" srcset="assets/images/hero-village-mobile.png" />
-    <img class="scene__bg" src="assets/images/hero-village.png" width="1673" height="940"
-         alt="हरियाणवी गाँव की रात — चारपाई, हुक्का, टपरी, ट्रैक्टर और चौपाल में बैठे लोग" />
-  </picture>
+<picture class="scene__picture">
+  <source media="(max-width: 640px)" srcset="assets/images/hero-village-mobile.webp" />
+  <img class="scene__bg" src="assets/images/hero-village.webp" width="1673" height="940"
+       alt="हरियाणवी गाँव की रात — चारपाई, हुक्का, टपरी, ट्रैक्टर और चौपाल में बैठे लोग"
+       fetchpriority="high" decoding="async" />
+</picture>
   <div class="scene__overlay" aria-hidden="true"></div>
   <div class="scene__vignette" aria-hidden="true"></div>
   <canvas id="jugnu-canvas" aria-hidden="true"></canvas>
