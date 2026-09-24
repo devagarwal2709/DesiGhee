@@ -146,7 +146,7 @@ a { color: inherit; }
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center bottom;
+  object-position: center 32%;
   filter: brightness(1.08) saturate(1.05);
   animation: scene-drift 34s ease-in-out infinite alternate;
 }
