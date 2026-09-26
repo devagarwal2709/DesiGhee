@@ -76,12 +76,14 @@ const songs = [
   { id: 163, title: "Laad Piya Ke", artist: "Sapna Choudhary", youtubeId: "JdUXW69YYg0", category: "tractor" },
   { id: 164, title: "4G Ka Jamana", artist: "Sapna Choudhary", youtubeId: "XjGEJDig1uo", category: "tractor" },
   { id: 165, title: "Balam", artist: "Sapna Choudhary", youtubeId: "fXYJ68s7vfA", category: "tractor" },
+
+  // --- हुक्का बैठक (Hukka Baithak - Dhanda Nyoliwala via SoundCloud) ---
   {
     id: 203,
     title: "Boom Shaka",
     artist: "Dhanda Nyoliwala x KR$NA",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/mutantsrecords-782367519/boom-shaka-kr-na-x-dhanda?si=6acd1597ff1042298fda9146a06cbbc7&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    soundcloudUrl: "https://soundcloud.com/mutantsrecords-782367519/boom-shaka-kr-na-x-dhanda",
     category: "hukka"
   },
   {
@@ -89,7 +91,7 @@ const songs = [
     title: "Not Guilty",
     artist: "Dhanda Nyoliwala",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/not-guilty-dhanda-nyoliwala?si=d50cd0dab4834de8a6035aaca98d1b70&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/not-guilty-dhanda-nyoliwala",
     category: "hukka"
   },
   {
@@ -97,7 +99,7 @@ const songs = [
     title: "Zigane",
     artist: "Dhanda Nyoliwala",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/mavi99-845201615/zigane-dhanda-nyoliwala-big?si=0916cdd8548041278f36cd4a80445cab&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    soundcloudUrl: "https://soundcloud.com/mavi99-845201615/zigane-dhanda-nyoliwala-big",
     category: "hukka"
   },
   {
@@ -105,7 +107,7 @@ const songs = [
     title: "Maruti",
     artist: "Dhanda Nyoliwala",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/marshall-jatt/maruti-dhanda-nyoliwala-1?si=52ebb3d6c02f421e936d20e5a51f3938&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    soundcloudUrl: "https://soundcloud.com/marshall-jatt/maruti-dhanda-nyoliwala-1",
     category: "hukka"
   },
   {
@@ -113,7 +115,7 @@ const songs = [
     title: "No Fluke",
     artist: "Dhanda Nyoliwala",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/no-fluke?si=2abac1f2496d4ada9344a70bc7fd54c7&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/no-fluke",
     category: "hukka"
   },
   {
@@ -121,7 +123,7 @@ const songs = [
     title: "Surrey BC",
     artist: "Dhanda Nyoliwala",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/songs-891847424/surrey-bc-dhanda-nyoliwala?si=8c0ec6ba5adf437390735e6fafb02261&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    soundcloudUrl: "https://soundcloud.com/songs-891847424/surrey-bc-dhanda-nyoliwala",
     category: "hukka"
   },
   {
@@ -129,7 +131,7 @@ const songs = [
     title: "Jeelo Jeelo",
     artist: "Dhanda Nyoliwala",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/songs-891847424/jeelo-jeelo-dhanda-nyoliwala?si=648d95acc7944364b206fd4cb3eea1dc&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    soundcloudUrl: "https://soundcloud.com/songs-891847424/jeelo-jeelo-dhanda-nyoliwala",
     category: "hukka"
   },
   {
@@ -137,7 +139,7 @@ const songs = [
     title: "Big Plans",
     artist: "Dhanda Nyoliwala",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/mavi99-845201615/big-plans-dhanda-nyoliwala-big?si=ecd83482d988412aadce5da04b4c06cd&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    soundcloudUrl: "https://soundcloud.com/mavi99-845201615/big-plans-dhanda-nyoliwala-big",
     category: "hukka"
   },
   {
@@ -145,7 +147,7 @@ const songs = [
     title: "Vomit On Paper",
     artist: "Dhanda Nyoliwala",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/k-i-r-a-t/vomit-on-paper-dhanda?si=2f47810f3fae40908020838cc1088f91&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    soundcloudUrl: "https://soundcloud.com/k-i-r-a-t/vomit-on-paper-dhanda",
     category: "hukka"
   },
   {
@@ -153,7 +155,7 @@ const songs = [
     title: "Charche",
     artist: "Xvir x Dhanda Nyoliwala",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/brand-new-songs-62789070/charche-dhanda-nyoliwala-xvir?si=10b286347b0147eb8ba26a5ff2f57495&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    soundcloudUrl: "https://soundcloud.com/brand-new-songs-62789070/charche-dhanda-nyoliwala-xvir",
     category: "hukka"
   },
   {
@@ -161,7 +163,7 @@ const songs = [
     title: "Paradox",
     artist: "Dhanda Nyoliwala",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/paradox?in=user-559084687/sets/dhanda-nyoliwala&si=55055a78a30c4363b5f4db60d6f7910b&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/paradox",
     category: "hukka"
   },
   {
@@ -169,7 +171,7 @@ const songs = [
     title: "Balkan Girl",
     artist: "Xvir x Dhanda Nyoliwala",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/balkan-girl?in=user-559084687/sets/dhanda-nyoliwala&si=f5fed69730a84c84bf6b07281def09a3&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/balkan-girl",
     category: "hukka"
   }
 ];

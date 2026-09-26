@@ -1,6 +1,6 @@
 /*
-  player.js — Unified YouTube + SoundCloud Engine
-  -----------------------------------------------
+  player.js — Optimized Dual Engine (Prewarmed SoundCloud + Low Latency YouTube)
+  -----------------------------------------------------------------------------
 */
 
 const Player = (() => {
@@ -172,7 +172,7 @@ const Player = (() => {
   }
 
   // =========================================================================
-  // 2. SoundCloud Engine
+  // 2. SoundCloud Engine (Eager Pre-warming)
   // =========================================================================
   let scWidget = null;
   let scReady = false;
@@ -198,15 +198,17 @@ const Player = (() => {
     return scApiPromise;
   }
 
-  function ensureSoundCloudReady(trackUrl) {
-    if (scReady) return Promise.resolve();
-    if (scInitPromise) return scInitPromise;
+  function prewarmSoundCloud() {
+    if (scReady || scInitPromise) return scInitPromise;
+    const iframe = document.getElementById("sc-player");
+    if (!iframe) return Promise.resolve();
 
     scInitPromise = loadSoundCloudAPI().then(() => new Promise((resolve) => {
-      const iframe = document.getElementById("sc-player");
-      iframe.src = `https://w.soundcloud.com/player/?url=${encodeURIComponent(trackUrl)}&auto_play=false&visual=false`;
+      // Seed with lightweight payload to bind widget
+      if (!iframe.src || iframe.src === "about:blank") {
+        iframe.src = "https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/293&auto_play=false&visual=false";
+      }
       scWidget = SC.Widget(iframe);
-
       scWidget.bind(SC.Widget.Events.READY, () => {
         scReady = true;
         try { scWidget.setVolume(volume); } catch (_) {}
@@ -254,8 +256,7 @@ const Player = (() => {
       });
     })).catch((err) => {
       scInitPromise = null;
-      console.warn("SoundCloud initialization error:", err);
-      emit("apierror", { message: err.message });
+      console.warn("SoundCloud pre-warm notice:", err);
     });
 
     return scInitPromise;
@@ -320,7 +321,7 @@ const Player = (() => {
   }
 
   // =========================================================================
-  // 4. Queue & Playback Handoff
+  // 4. Queue & Playback Management
   // =========================================================================
   function setQueue(newQueue, startIndex = 0) {
     queue = newQueue;
@@ -354,7 +355,6 @@ const Player = (() => {
 
     const nextSource = song.source === "soundcloud" ? "soundcloud" : "youtube";
 
-    // Stop whichever engine was previously running
     if (activeSource && activeSource !== nextSource) {
       if (activeSource === "youtube" && ytReady) {
         try { ytPlayer.pauseVideo(); } catch (_) {}
@@ -375,7 +375,7 @@ const Player = (() => {
 
     if (activeSource === "soundcloud") {
       armWatchdog();
-      ensureSoundCloudReady(song.soundcloudUrl).then(() => {
+      prewarmSoundCloud().then(() => {
         if (!scWidget) return;
         scWidget.load(song.soundcloudUrl, {
           auto_play: autoplay,
@@ -392,8 +392,12 @@ const Player = (() => {
         return;
       }
       armWatchdog();
-      if (autoplay) ytPlayer.loadVideoById(song.youtubeId);
-      else ytPlayer.cueVideoById(song.youtubeId);
+      const startSec = Number(song.start) || 0;
+      if (autoplay) {
+        ytPlayer.loadVideoById({ videoId: song.youtubeId, startSeconds: startSec });
+      } else {
+        ytPlayer.cueVideoById({ videoId: song.youtubeId, startSeconds: startSec });
+      }
     }
   }
 
@@ -420,6 +424,7 @@ const Player = (() => {
   }
 
   function start() {
+    prewarmSoundCloud();
     playRandom();
   }
 
@@ -506,7 +511,7 @@ const Player = (() => {
           const current = (posMs || 0) / 1000;
           const duration = (durMs || 0) / 1000;
           emit("progress", { current, duration });
-          if (duration > 0) emit("duration", { youtubeId: songKey(song), seconds: duration });
+          if (duration > 0) emit("duration", { idOrUrl: song.soundcloudUrl, seconds: duration });
         });
       });
     } else {
@@ -536,6 +541,7 @@ const Player = (() => {
 
   function init(initialQueue) {
     if (Array.isArray(initialQueue)) queue = initialQueue;
+    prewarmSoundCloud();
     if (initPromise) return initPromise;
     initPromise = loadYouTubeAPI()
       .then(createYouTubePlayer)
@@ -560,7 +566,6 @@ const Player = (() => {
     if (!initPromise) init().catch(() => {});
   }
 
-  // Background probe for YouTube songs
   function probeDurations(youtubeIds) {
     const ids = [...new Set(youtubeIds)].filter(Boolean);
     const wrap = document.querySelector(".yt-wrap--probe");
@@ -593,7 +598,7 @@ const Player = (() => {
           const data = typeof probe.getVideoData === "function" ? probe.getVideoData() : null;
           if (!data || !data.video_id || data.video_id === id) seconds = probe.getDuration();
         } catch (_) {}
-        if (seconds > 0) { emit("duration", { youtubeId: id, seconds }); nextId(); }
+        if (seconds > 0) { emit("duration", { idOrUrl: id, seconds }); nextId(); }
         else if (tries >= 16) nextId();
       }, 250);
     };
@@ -633,5 +638,6 @@ const Player = (() => {
     setVolume,
     isReady: () => ytReady,
     probeDurations,
+    prewarmSoundCloud,
   };
 })();

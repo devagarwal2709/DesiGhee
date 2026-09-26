@@ -63,7 +63,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function learnDurationById(idOrUrl, seconds) {
-    const s = songs.find((x) => x.youtubeId === idOrUrl || x.soundcloudUrl === idOrUrl || `sc:${x.soundcloudUrl}` === idOrUrl);
+    const s = songs.find((x) => x.youtubeId === idOrUrl || x.soundcloudUrl === idOrUrl);
     if (s) learnDuration(s, seconds);
   }
 
@@ -203,6 +203,11 @@ document.addEventListener("DOMContentLoaded", () => {
     currentTimeEl.textContent = "0:00";
     durationEl.textContent = "0:00";
     activeSongId = song.id;
+
+    // Reset button state until sound actually starts
+    dock.classList.remove("is-playing");
+    playPauseBtn.classList.remove("is-playing");
+    playPauseBtn.setAttribute("aria-label", "गाना चलाएं");
   });
 
   Player.on("playstate", ({ playing }) => {
@@ -230,7 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  Player.on("duration", ({ youtubeId, seconds }) => learnDurationById(youtubeId, seconds));
+  Player.on("duration", ({ idOrUrl, seconds }) => learnDurationById(idOrUrl, seconds));
 
   let probeScheduled = false;
   Player.on("playstate", ({ playing }) => {
