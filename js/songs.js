@@ -77,27 +77,11 @@ const songs = [
   { id: 164, title: "4G Ka Jamana", artist: "Sapna Choudhary", youtubeId: "XjGEJDig1uo", category: "tractor" },
   { id: 165, title: "Balam", artist: "Sapna Choudhary", youtubeId: "fXYJ68s7vfA", category: "tractor" },
   {
-    id: 201,
-    title: "Do Numbari",
-    artist: "Dhanda Nyoliwala",
-    source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/bollywood-top/do-numbari-dhanda-nyoliwala",
-    category: "hukka"
-  },
-  {
-    id: 202,
-    title: "Kath Lagda x Bodyguard x Hood",
-    artist: "Dhanda Nyoliwala",
-    source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/trend-catch-309053658/kath-lagda-x-bodyguard-x-hood",
-    category: "hukka"
-  },
-  {
     id: 203,
-    title: "Boom Shaka Laka x KR$NA",
+    title: "Boom Shaka",
     artist: "Dhanda Nyoliwala x KR$NA",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/mutantsrecords-782367519/boom-shaka-kr-na-x-dhanda",
+    soundcloudUrl: "https://soundcloud.com/mutantsrecords-782367519/boom-shaka-kr-na-x-dhanda?si=6acd1597ff1042298fda9146a06cbbc7&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
     category: "hukka"
   },
   {
@@ -105,7 +89,7 @@ const songs = [
     title: "Not Guilty",
     artist: "Dhanda Nyoliwala",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/not-guilty-dhanda-nyoliwala",
+    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/not-guilty-dhanda-nyoliwala?si=d50cd0dab4834de8a6035aaca98d1b70&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
     category: "hukka"
   },
   {
@@ -113,7 +97,7 @@ const songs = [
     title: "Zigane",
     artist: "Dhanda Nyoliwala",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/zigane-dhanda-nyoliwala",
+    soundcloudUrl: "https://soundcloud.com/mavi99-845201615/zigane-dhanda-nyoliwala-big?si=0916cdd8548041278f36cd4a80445cab&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
     category: "hukka"
   },
   {
@@ -121,15 +105,7 @@ const songs = [
     title: "Maruti",
     artist: "Dhanda Nyoliwala",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/maruti",
-    category: "hukka"
-  },
-  {
-    id: 207,
-    title: "Ego Killer",
-    artist: "Dhanda Nyoliwala",
-    source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/ra-gaming-925825101/ego-killer-dhanda-nyoliwala",
+    soundcloudUrl: "https://soundcloud.com/marshall-jatt/maruti-dhanda-nyoliwala-1?si=52ebb3d6c02f421e936d20e5a51f3938&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
     category: "hukka"
   },
   {
@@ -137,23 +113,7 @@ const songs = [
     title: "No Fluke",
     artist: "Dhanda Nyoliwala",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/no-fluke",
-    category: "hukka"
-  },
-  {
-    id: 209,
-    title: "La La La",
-    artist: "Dhanda Nyoliwala",
-    source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/officialarstudioz/la-la-la-dhanda-nyoliwala-new",
-    category: "hukka"
-  },
-  {
-    id: 210,
-    title: "Russian Bandana",
-    artist: "Dhanda Nyoliwala",
-    source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/2279853a-f17b-4840-8339-054d36cb5e61",
+    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/no-fluke?si=2abac1f2496d4ada9344a70bc7fd54c7&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
     category: "hukka"
   },
   {
@@ -161,17 +121,57 @@ const songs = [
     title: "Surrey BC",
     artist: "Dhanda Nyoliwala",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/songs-891847424/surrey-bc-dhanda-nyoliwala",
+    soundcloudUrl: "https://soundcloud.com/songs-891847424/surrey-bc-dhanda-nyoliwala?si=8c0ec6ba5adf437390735e6fafb02261&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
     category: "hukka"
   },
   {
     id: 212,
-    title: "Knife Brows",
-    artist: "Dhanda Nyoliwala x Bohemia",
+    title: "Jeelo Jeelo",
+    artist: "Dhanda Nyoliwala",
     source: "soundcloud",
-    soundcloudUrl: "https://soundcloud.com/prodbysidsmusic/knife-brows-dhanda-nyoliwala-x-bohemia-sids-music",
+    soundcloudUrl: "https://soundcloud.com/songs-891847424/jeelo-jeelo-dhanda-nyoliwala?si=648d95acc7944364b206fd4cb3eea1dc&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
     category: "hukka"
   },
+  {
+    id: 213,
+    title: "Big Plans",
+    artist: "Dhanda Nyoliwala",
+    source: "soundcloud",
+    soundcloudUrl: "https://soundcloud.com/mavi99-845201615/big-plans-dhanda-nyoliwala-big?si=ecd83482d988412aadce5da04b4c06cd&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    category: "hukka"
+  },
+  {
+    id: 214,
+    title: "Vomit On Paper",
+    artist: "Dhanda Nyoliwala",
+    source: "soundcloud",
+    soundcloudUrl: "https://soundcloud.com/k-i-r-a-t/vomit-on-paper-dhanda?si=2f47810f3fae40908020838cc1088f91&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    category: "hukka"
+  },
+  {
+    id: 215,
+    title: "Charche",
+    artist: "Xvir x Dhanda Nyoliwala",
+    source: "soundcloud",
+    soundcloudUrl: "https://soundcloud.com/brand-new-songs-62789070/charche-dhanda-nyoliwala-xvir?si=10b286347b0147eb8ba26a5ff2f57495&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    category: "hukka"
+  },
+  {
+    id: 216,
+    title: "Paradox",
+    artist: "Dhanda Nyoliwala",
+    source: "soundcloud",
+    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/paradox?in=user-559084687/sets/dhanda-nyoliwala&si=55055a78a30c4363b5f4db60d6f7910b&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    category: "hukka"
+  },
+  {
+    id: 217,
+    title: "Balkan Girl",
+    artist: "Xvir x Dhanda Nyoliwala",
+    source: "soundcloud",
+    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/balkan-girl?in=user-559084687/sets/dhanda-nyoliwala&si=f5fed69730a84c84bf6b07281def09a3&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing",
+    category: "hukka"
+  }
 ];
 
 function getCategoryMeta(categoryId) {
