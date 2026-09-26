@@ -1,68 +1,25 @@
 /*
-  player.js
-  ---------
-  Everything to do with actually playing audio through YouTube lives here.
-
-  What this file does
-   - loads the official YouTube IFrame Player API (once, up-front, with a
-     timeout + error handler so a blocked / offline API can never leave the
-     UI hanging on "loading")
-   - creates ONE real YT.Player instance inside the hidden #yt-player div
-   - exposes a small API (Player.start, Player.next, Player.seekTo, ...) so
-     app.js never touches the YouTube object directly
-   - AUTOPLAY GATE: playback is always started from inside a real click
-     handler. If the browser still refuses (autoplay blocked), we emit
-     "autoplayblocked" so the UI can show a "बैठ जा / गाना चलाओ" button.
-   - ERROR RESILIENCE: codes 2 / 5 / 100 / 101 / 150 auto-skip to the next
-     playable song in the active queue; a start-up watchdog catches songs
-     that never begin; a session "failed" list stops us retrying dead songs.
-   - STATE SYNC: one place (handleStateChange) turns YouTube states into
-     UI events, and progress is only reported for the *current* video, so a
-     stale time from the previous song can never flicker onto the seek bar.
-
-  We never download, extract, or store audio. Playback always happens
-  inside YouTube's own official player.
-
-  Events emitted (subscribe with Player.on(name, cb)):
-    ready              player is ready to accept commands
-    songchange         { song, index, total }
-    playstate          { playing }
-    buffering          { on }
-    progress           { current, duration }
-    shuffle            { on }
-    volume             { percent }
-    songerror          { song, code, meaning, skipping }
-    autoplayblocked    {}       browser refused to start sound
-    apierror           { message }   API script / iframe never came up
-    allfailed          {}       every song in the queue failed
-    duration           { youtubeId, seconds }   a song's length was discovered
+  player.js — Unified YouTube + SoundCloud Engine
+  -----------------------------------------------
 */
 
 const Player = (() => {
-  // ---- tunables --------------------------------------------------------------
-  const API_TIMEOUT_MS    = 12000; // YouTube API script / iframe must be ready by then
-  const START_WATCHDOG_MS = 8000;  // a requested song must be playing/buffering by then
+  const API_TIMEOUT_MS    = 12000;
+  const START_WATCHDOG_MS = 8000;
 
-  // ---- state -----------------------------------------------------------------
-  let ytPlayer = null;
-  let ytReady = false;
-  let apiPromise = null;
-  let initPromise = null;
-
-  let queue = [];              // the current (possibly filtered) list of songs
-  let queueIndex = 0;          // where we are in `queue`
-
+  let queue = [];
+  let queueIndex = 0;
   let volume = 70;
+  let activeSource = null;
 
-  let hasLoaded = false;       // has any song been requested from YouTube yet?
-  let pending = null;          // "random" | "current" — a start requested before the player was ready
+  let hasLoaded = false;
+  let pending = null;
   let progressTimer = null;
   let watchdogTimer = null;
   let bufferRetried = false;
 
-  const failed = new Set();    // youtubeIds that errored this session
-  let consecutiveFailures = 0; // reset as soon as any song actually plays
-
+  const failed = new Set();
+  let consecutiveFailures = 0;
   const listeners = {};
 
   function on(eventName, cb) {
@@ -70,125 +27,83 @@ const Player = (() => {
   }
   function emit(eventName, payload) {
     (listeners[eventName] || []).forEach((cb) => {
-      try { cb(payload); } catch (err) { console.error(`Player listener for "${eventName}" threw:`, err); }
+      try { cb(payload); } catch (err) { console.error(`Player listener "${eventName}" error:`, err); }
     });
   }
 
-  // ---- 1. Boot the official YouTube IFrame API ---------------------------------
+  function songKey(song) {
+    if (!song) return "";
+    return song.source === "soundcloud" ? `sc:${song.soundcloudUrl}` : `yt:${song.youtubeId}`;
+  }
+
+  // =========================================================================
+  // 1. YouTube Engine
+  // =========================================================================
+  let ytPlayer = null;
+  let ytReady = false;
+  let apiPromise = null;
+  let initPromise = null;
+
   function loadYouTubeAPI() {
     if (apiPromise) return apiPromise;
-
     apiPromise = new Promise((resolve, reject) => {
       if (window.YT && window.YT.Player) { resolve(); return; }
-
-      const previousHandler = window.onYouTubeIframeAPIReady; // don't clobber anyone else's
+      const prev = window.onYouTubeIframeAPIReady;
       window.onYouTubeIframeAPIReady = () => {
-        if (typeof previousHandler === "function") previousHandler();
+        if (typeof prev === "function") prev();
         resolve();
       };
-
       const tag = document.createElement("script");
       tag.src = "https://www.youtube.com/iframe_api";
       tag.async = true;
-      tag.onerror = () => reject(new Error("The YouTube API script could not be loaded (offline, blocked or ad-blocker?)."));
+      tag.onerror = () => reject(new Error("YouTube API failed to load"));
       document.head.appendChild(tag);
-
-      setTimeout(() => reject(new Error("The YouTube API took too long to load.")), API_TIMEOUT_MS);
+      setTimeout(() => reject(new Error("YouTube API load timeout")), API_TIMEOUT_MS);
     }).catch((err) => {
-      apiPromise = null; // allow a retry
+      apiPromise = null;
       throw err;
     });
-
     return apiPromise;
   }
 
-  function buildPlayerVars() {
-    const vars = {
-      playsinline: 1,
-      controls: 0,
-      disablekb: 1,
-      fs: 0,
-      modestbranding: 1,
-      rel: 0,
-      iv_load_policy: 3,
-    };
-    // "origin" is only valid on http(s). On file:// it would be the string
-    // "null" and YouTube answers with error 153 — so we simply leave it out.
-    if (/^https?:$/.test(window.location.protocol)) {
-      vars.origin = window.location.origin;
-    }
-    return vars;
-  }
-
-  function createPlayer() {
+  function createYouTubePlayer() {
     return new Promise((resolve, reject) => {
-      const readyTimeout = setTimeout(
-        () => reject(new Error("The YouTube player did not become ready in time.")),
-        API_TIMEOUT_MS
-      );
-
-      const playerVars = buildPlayerVars();
-
+      const readyTimeout = setTimeout(() => reject(new Error("YouTube player ready timeout")), API_TIMEOUT_MS);
+      const vars = {
+        playsinline: 1,
+        controls: 0,
+        disablekb: 1,
+        fs: 0,
+        modestbranding: 1,
+        rel: 0,
+        iv_load_policy: 3,
+      };
+      if (/^https?:$/.test(window.location.protocol)) {
+        vars.origin = window.location.origin;
+      }
       ytPlayer = new YT.Player("yt-player", {
         height: "100%",
         width: "100%",
-        playerVars,
+        playerVars: vars,
         events: {
           onReady: () => {
             clearTimeout(readyTimeout);
             ytReady = true;
-            try { ytPlayer.setVolume(volume); } catch (_) { /* ignore */ }
+            try { ytPlayer.setVolume(volume); } catch (_) {}
             emit("ready");
             resolve();
             runPending();
           },
-          onStateChange: handleStateChange,
-          onError: handleError,
+          onStateChange: handleYtStateChange,
+          onError: handleYtError,
           onAutoplayBlocked: signalAutoplayBlocked,
         },
       });
     });
   }
 
-  /** Load the API and build the player. Safe to call more than once. */
-  function init(initialQueue) {
-    if (Array.isArray(initialQueue)) queue = initialQueue;
-    if (initPromise) return initPromise;
-
-    initPromise = loadYouTubeAPI()
-      .then(createPlayer)
-      .catch((err) => {
-        initPromise = null;
-        pending = null;
-        console.error("Player init failed:", err);
-        emit("buffering", { on: false });
-        emit("apierror", { message: err.message });
-        throw err;
-      });
-    return initPromise;
-  }
-
-  /** Try booting again after an "apierror" (used by the retry button). */
-  function retry(thenStart = true) {
-    if (thenStart) pending = "random";
-    emit("buffering", { on: true });
-    return init().catch(() => {});
-  }
-
-  /** If a previous boot attempt failed, any new user action quietly tries again. */
-  function ensureBooting() {
-    if (!initPromise) init().catch(() => {});
-  }
-
-  function runPending() {
-    const action = pending;
-    pending = null;
-    if (action === "random") playRandom();
-    else if (action === "current") loadCurrent(true);
-  }
-
-  // ---- 2. State handling — the ONE place YouTube states become UI events -------
-  function handleStateChange(event) {
+  function handleYtStateChange(event) {
+    if (activeSource !== "youtube") return;
     const S = YT.PlayerState;
     switch (event.data) {
       case S.PLAYING:
@@ -199,7 +114,6 @@ const Player = (() => {
         emit("playstate", { playing: true });
         startProgressTimer();
         break;
-
       case S.PAUSED:
         clearWatchdog();
         stopProgressTimer();
@@ -207,76 +121,190 @@ const Player = (() => {
         emit("playstate", { playing: false });
         reportProgress();
         break;
-
       case S.BUFFERING:
         emit("buffering", { on: true });
         break;
-
       case S.CUED:
         stopProgressTimer();
         emit("buffering", { on: false });
         emit("playstate", { playing: false });
-        // We asked for autoplay but the video just sat there cued → browser said no.
         if (watchdogTimer) {
           clearWatchdog();
           watchdogTimer = setTimeout(onWatchdog, 1500);
         }
         break;
-
       case S.ENDED:
         stopProgressTimer();
         emit("playstate", { playing: false });
-        next(); // auto-play the next song when one finishes
-        break;
-
-      default: // UNSTARTED (-1): nothing to do, the watchdog covers a stall
+        next();
         break;
     }
   }
 
-  // ---- 3. Errors ---------------------------------------------------------------
-  // https://developers.google.com/youtube/iframe_api_reference#onError
   const YT_ERROR_MEANINGS = {
-    2:   "Invalid video ID — the youtubeId in songs.js is malformed.",
-    5:   "HTML5 player error — the video cannot be played in the HTML5 player.",
-    100: "Video not found — it was removed or marked private.",
-    101: "Embedding disabled — the owner does not allow playback on other sites.",
-    150: "Embedding disabled — same restriction as 101.",
-    153: "Missing referrer / origin — open the site through http(s), not file://.",
+    2: "Invalid video ID",
+    5: "HTML5 error",
+    100: "Not found/private",
+    101: "Embed disabled by uploader",
+    150: "Embed blocked by label",
+    153: "File:// origin restriction",
   };
-  // These are problems with ONE video, so skipping to another song makes sense.
   const SKIPPABLE = new Set([2, 5, 100, 101, 150]);
 
-  function handleError(event) {
+  function handleYtError(event) {
+    if (activeSource !== "youtube") return;
     clearWatchdog();
     const song = currentSong();
     const code = event && typeof event.data !== "undefined" ? event.data : "unknown";
-    const meaning = YT_ERROR_MEANINGS[code] || "Unrecognised error code — see the YouTube IFrame API docs.";
+    const meaning = YT_ERROR_MEANINGS[code] || "Playback failed";
     const skipping = SKIPPABLE.has(code);
 
-    console.error(
-      "YouTube playback error:\n" +
-      `Song: ${song ? song.title : "(unknown)"}\n` +
-      `Video ID: ${song ? song.youtubeId : "(unknown)"}\n` +
-      `Error code: ${code}\n` +
-      `Meaning: ${meaning}`
-    );
-
-    if (song) failed.add(song.youtubeId);
+    if (song) failed.add(songKey(song));
     consecutiveFailures++;
     stopProgressTimer();
     emit("songerror", { song, code, meaning, skipping });
 
-    if (skipping) {
-      skipToNextPlayable();
-    } else {
-      // e.g. 153: a setup problem — skipping through the whole list can't fix it.
+    if (skipping) skipToNextPlayable();
+    else {
       emit("buffering", { on: false });
       emit("playstate", { playing: false });
     }
   }
 
-  /** Move on after a failure, never landing on a song we already know is dead. */
+  // =========================================================================
+  // 2. SoundCloud Engine
+  // =========================================================================
+  let scWidget = null;
+  let scReady = false;
+  let scInitPromise = null;
+  let scIsPlaying = false;
+  let scApiPromise = null;
+
+  function loadSoundCloudAPI() {
+    if (scApiPromise) return scApiPromise;
+    scApiPromise = new Promise((resolve, reject) => {
+      if (window.SC && window.SC.Widget) { resolve(); return; }
+      const tag = document.createElement("script");
+      tag.src = "https://w.soundcloud.com/player/api.js";
+      tag.async = true;
+      tag.onerror = () => reject(new Error("SoundCloud Widget API failed to load"));
+      tag.onload = () => resolve();
+      document.head.appendChild(tag);
+      setTimeout(() => reject(new Error("SoundCloud API load timeout")), API_TIMEOUT_MS);
+    }).catch((err) => {
+      scApiPromise = null;
+      throw err;
+    });
+    return scApiPromise;
+  }
+
+  function ensureSoundCloudReady(trackUrl) {
+    if (scReady) return Promise.resolve();
+    if (scInitPromise) return scInitPromise;
+
+    scInitPromise = loadSoundCloudAPI().then(() => new Promise((resolve) => {
+      const iframe = document.getElementById("sc-player");
+      iframe.src = `https://w.soundcloud.com/player/?url=${encodeURIComponent(trackUrl)}&auto_play=false&visual=false`;
+      scWidget = SC.Widget(iframe);
+
+      scWidget.bind(SC.Widget.Events.READY, () => {
+        scReady = true;
+        try { scWidget.setVolume(volume); } catch (_) {}
+
+        scWidget.bind(SC.Widget.Events.PLAY, () => {
+          if (activeSource !== "soundcloud") return;
+          clearWatchdog();
+          bufferRetried = false;
+          consecutiveFailures = 0;
+          scIsPlaying = true;
+          emit("buffering", { on: false });
+          emit("playstate", { playing: true });
+          startProgressTimer();
+        });
+
+        scWidget.bind(SC.Widget.Events.PAUSE, () => {
+          if (activeSource !== "soundcloud") return;
+          clearWatchdog();
+          scIsPlaying = false;
+          stopProgressTimer();
+          emit("buffering", { on: false });
+          emit("playstate", { playing: false });
+          reportProgress();
+        });
+
+        scWidget.bind(SC.Widget.Events.FINISH, () => {
+          if (activeSource !== "soundcloud") return;
+          stopProgressTimer();
+          emit("playstate", { playing: false });
+          next();
+        });
+
+        scWidget.bind(SC.Widget.Events.ERROR, () => {
+          if (activeSource !== "soundcloud") return;
+          clearWatchdog();
+          const song = currentSong();
+          if (song) failed.add(songKey(song));
+          consecutiveFailures++;
+          stopProgressTimer();
+          emit("songerror", { song, code: "sc_error", meaning: "SoundCloud stream unavailable", skipping: true });
+          skipToNextPlayable();
+        });
+
+        resolve();
+      });
+    })).catch((err) => {
+      scInitPromise = null;
+      console.warn("SoundCloud initialization error:", err);
+      emit("apierror", { message: err.message });
+    });
+
+    return scInitPromise;
+  }
+
+  // =========================================================================
+  // 3. Watchdog & Recovery
+  // =========================================================================
+  function signalAutoplayBlocked() {
+    clearWatchdog();
+    emit("buffering", { on: false });
+    emit("autoplayblocked", {});
+  }
+
+  function armWatchdog() {
+    clearWatchdog();
+    watchdogTimer = setTimeout(onWatchdog, START_WATCHDOG_MS);
+  }
+
+  function clearWatchdog() {
+    if (watchdogTimer) clearTimeout(watchdogTimer);
+    watchdogTimer = null;
+  }
+
+  function onWatchdog() {
+    watchdogTimer = null;
+    const song = currentSong();
+    if (!song) return;
+
+    if (activeSource === "youtube") {
+      if (!ytReady) return;
+      const state = ytPlayer.getPlayerState();
+      if (state === YT.PlayerState.PLAYING || state === YT.PlayerState.PAUSED) return;
+      if (state === YT.PlayerState.BUFFERING) {
+        if (!bufferRetried) { bufferRetried = true; armWatchdog(); return; }
+        bufferRetried = false;
+        failed.add(songKey(song));
+        consecutiveFailures++;
+        emit("songerror", { song, code: "timeout", meaning: "Song took too long to start", skipping: true });
+        skipToNextPlayable();
+        return;
+      }
+      signalAutoplayBlocked();
+    } else if (activeSource === "soundcloud") {
+      if (scIsPlaying) return;
+      signalAutoplayBlocked();
+    }
+  }
+
   function skipToNextPlayable() {
     if (queue.length === 0 || consecutiveFailures >= queue.length) return giveUp();
     const idx = pickIndex(1);
@@ -291,46 +319,9 @@ const Player = (() => {
     emit("allfailed", {});
   }
 
-  // ---- 4. Autoplay gate + start-up watchdog ------------------------------------
-  function signalAutoplayBlocked() {
-    clearWatchdog();
-    emit("buffering", { on: false });
-    emit("autoplayblocked", {});
-  }
-
-  function armWatchdog() {
-    clearWatchdog();
-    watchdogTimer = setTimeout(onWatchdog, START_WATCHDOG_MS);
-  }
-  function clearWatchdog() {
-    if (watchdogTimer) clearTimeout(watchdogTimer);
-    watchdogTimer = null;
-  }
-  function onWatchdog() {
-    watchdogTimer = null;
-    if (!ytReady) return;
-    const S = YT.PlayerState;
-    const state = ytPlayer.getPlayerState();
-
-    if (state === S.PLAYING || state === S.PAUSED) return; // all fine (or the user paused)
-
-    if (state === S.BUFFERING) {
-      // Slow network: wait one more cycle, then give up on this song.
-      if (!bufferRetried) { bufferRetried = true; armWatchdog(); return; }
-      bufferRetried = false;
-      const song = currentSong();
-      if (song) failed.add(song.youtubeId);
-      consecutiveFailures++;
-      emit("songerror", { song, code: "timeout", meaning: "The song took too long to start.", skipping: true });
-      skipToNextPlayable();
-      return;
-    }
-
-    // UNSTARTED / CUED after we asked it to play → the browser blocked autoplay.
-    signalAutoplayBlocked();
-  }
-
-  // ---- 5. Queue / song selection -----------------------------------------------
+  // =========================================================================
+  // 4. Queue & Playback Handoff
+  // =========================================================================
   function setQueue(newQueue, startIndex = 0) {
     queue = newQueue;
     queueIndex = Math.max(0, Math.min(startIndex, queue.length - 1));
@@ -340,23 +331,19 @@ const Player = (() => {
     return queue[queueIndex] || null;
   }
 
-  /** Index of the next/previous song, avoiding known-bad ones. -1 if none left. */
   function pickIndex(direction) {
     const n = queue.length;
     if (n === 0) return -1;
-
-    // Every "next" is random — this is a radio-style shuffle-always player,
-    // there's no sequential/ordered mode to opt in or out of.
     if (direction > 0 && n > 1) {
       const pool = [];
       for (let i = 0; i < n; i++) {
-        if (i !== queueIndex && !failed.has(queue[i].youtubeId)) pool.push(i);
+        if (i !== queueIndex && !failed.has(songKey(queue[i]))) pool.push(i);
       }
       if (pool.length) return pool[Math.floor(Math.random() * pool.length)];
     }
     for (let step = 1; step <= n; step++) {
       const i = (((queueIndex + direction * step) % n) + n) % n;
-      if (!failed.has(queue[i].youtubeId)) return i;
+      if (!failed.has(songKey(queue[i]))) return i;
     }
     return -1;
   }
@@ -365,16 +352,20 @@ const Player = (() => {
     const song = currentSong();
     if (!song) return;
 
-    // The UI always learns about the new song straight away...
-    emit("songchange", { song, index: queueIndex, total: queue.length });
+    const nextSource = song.source === "soundcloud" ? "soundcloud" : "youtube";
 
-    // ...but if the player isn't ready yet, remember the request and run it on ready.
-    if (!ytReady) {
-      pending = "current";
-      emit("buffering", { on: true });
-      ensureBooting();
-      return;
+    // Stop whichever engine was previously running
+    if (activeSource && activeSource !== nextSource) {
+      if (activeSource === "youtube" && ytReady) {
+        try { ytPlayer.pauseVideo(); } catch (_) {}
+      }
+      if (activeSource === "soundcloud" && scReady && scWidget) {
+        try { scWidget.pause(); } catch (_) {}
+      }
     }
+    activeSource = nextSource;
+
+    emit("songchange", { song, index: queueIndex, total: queue.length });
 
     hasLoaded = true;
     bufferRetried = false;
@@ -382,111 +373,154 @@ const Player = (() => {
     emit("progress", { current: 0, duration: 0 });
     emit("buffering", { on: true });
 
-    if (autoplay) {
-      armWatchdog(); // arm first: state events may arrive before loadVideoById() returns
-      ytPlayer.loadVideoById(song.youtubeId);
+    if (activeSource === "soundcloud") {
+      armWatchdog();
+      ensureSoundCloudReady(song.soundcloudUrl).then(() => {
+        if (!scWidget) return;
+        scWidget.load(song.soundcloudUrl, {
+          auto_play: autoplay,
+          callback: () => {
+            try { scWidget.setVolume(volume); } catch (_) {}
+            if (autoplay) scWidget.play();
+          },
+        });
+      });
     } else {
-      ytPlayer.cueVideoById(song.youtubeId);
+      if (!ytReady) {
+        pending = "current";
+        ensureBooting();
+        return;
+      }
+      armWatchdog();
+      if (autoplay) ytPlayer.loadVideoById(song.youtubeId);
+      else ytPlayer.cueVideoById(song.youtubeId);
     }
   }
 
-  /** Play queue[index] because the user asked for it explicitly (retries dead songs too). */
+  function runPending() {
+    const action = pending;
+    pending = null;
+    if (action === "random") playRandom();
+    else if (action === "current") loadCurrent(true);
+  }
+
   function playAt(list, index) {
     setQueue(list, index);
     const song = currentSong();
-    if (song) failed.delete(song.youtubeId);
+    if (song) failed.delete(songKey(song));
     consecutiveFailures = 0;
     loadCurrent(true);
   }
 
   function playRandom() {
     if (!queue.length) return;
-    if (!ytReady) { pending = "random"; emit("buffering", { on: true }); ensureBooting(); return; }
     consecutiveFailures = 0;
     queueIndex = Math.floor(Math.random() * queue.length);
     loadCurrent(true);
   }
 
-  /**
-   * Call this from inside a click handler (the entry button). Doing the
-   * loadVideoById() call synchronously in the gesture is what lets the
-   * browser allow sound.
-   */
   function start() {
     playRandom();
   }
 
-  // ---- 6. Transport ------------------------------------------------------------
   function play() {
-    if (!ytReady) { pending = pending || "random"; ensureBooting(); return; }
-    if (!hasLoaded) { playRandom(); return; }
-    ytPlayer.playVideo();
     armWatchdog();
+    if (activeSource === "soundcloud") {
+      if (scWidget) scWidget.play();
+    } else {
+      if (!ytReady) { pending = "random"; ensureBooting(); return; }
+      if (!hasLoaded) { playRandom(); return; }
+      ytPlayer.playVideo();
+    }
   }
 
   function pause() {
-    if (!ytReady) return;
-    ytPlayer.pauseVideo();
+    clearWatchdog();
+    if (activeSource === "soundcloud") {
+      if (scWidget) scWidget.pause();
+    } else {
+      if (ytReady) ytPlayer.pauseVideo();
+    }
   }
 
   function togglePlay() {
-    if (!ytReady) { pending = pending || "random"; emit("buffering", { on: true }); ensureBooting(); return; }
-    if (!hasLoaded) { playRandom(); return; }
-    const S = YT.PlayerState;
-    const state = ytPlayer.getPlayerState();
-    if (state === S.PLAYING || state === S.BUFFERING) pause();
-    else play();
+    if (activeSource === "soundcloud") {
+      if (!scWidget) return;
+      if (scIsPlaying) pause(); else play();
+    } else {
+      if (!ytReady) { pending = "random"; emit("buffering", { on: true }); ensureBooting(); return; }
+      if (!hasLoaded) { playRandom(); return; }
+      const s = ytPlayer.getPlayerState();
+      if (s === YT.PlayerState.PLAYING || s === YT.PlayerState.BUFFERING) pause();
+      else play();
+    }
   }
 
   function next() {
     if (queue.length === 0) return;
-    let idx = pickIndex(1);
-    if (idx === -1) idx = (queueIndex + 1) % queue.length; // everything failed: just try the neighbour
-    queueIndex = idx;
+    const idx = pickIndex(1);
+    queueIndex = idx === -1 ? (queueIndex + 1) % queue.length : idx;
     loadCurrent(true);
   }
 
   function prev() {
     if (queue.length === 0) return;
     let idx = pickIndex(-1);
-    if (idx === -1) idx = (queueIndex - 1 + queue.length) % queue.length;
-    queueIndex = idx;
+    queueIndex = idx === -1 ? (queueIndex - 1 + queue.length) % queue.length : idx;
     loadCurrent(true);
   }
 
   function seekTo(seconds) {
-    if (!ytReady || !hasLoaded) return;
-    ytPlayer.seekTo(seconds, true);
-    setTimeout(reportProgress, 120); // update the bar even while paused
+    if (activeSource === "soundcloud") {
+      if (scReady && scWidget) {
+        scWidget.seekTo(seconds * 1000);
+        setTimeout(reportProgress, 120);
+      }
+    } else {
+      if (ytReady && hasLoaded) {
+        ytPlayer.seekTo(seconds, true);
+        setTimeout(reportProgress, 120);
+      }
+    }
   }
 
   function setVolume(percent) {
     volume = Math.max(0, Math.min(100, Number(percent) || 0));
-    if (ytReady) {
-      try { ytPlayer.setVolume(volume); } catch (_) { /* ignore */ }
+    if (ytReady && ytPlayer && ytPlayer.setVolume) {
+      try { ytPlayer.setVolume(volume); } catch (_) {}
+    }
+    if (scReady && scWidget && scWidget.setVolume) {
+      try { scWidget.setVolume(volume); } catch (_) {}
     }
     emit("volume", { percent: volume });
   }
 
-  // ---- 7. Progress reporting -----------------------------------------------------
   function reportProgress() {
-    if (!ytReady || !hasLoaded) return;
     const song = currentSong();
     if (!song) return;
 
-    // Race guard: right after a song change YouTube can still report the
-    // PREVIOUS video's time for a moment. Only accept data for the current one.
-    try {
-      if (typeof ytPlayer.getVideoData === "function") {
-        const data = ytPlayer.getVideoData();
-        if (data && data.video_id && data.video_id !== song.youtubeId) return;
-      }
-    } catch (_) { /* fall through */ }
-
-    emit("progress", {
-      current: ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() || 0 : 0,
-      duration: ytPlayer.getDuration ? ytPlayer.getDuration() || 0 : 0,
-    });
+    if (activeSource === "soundcloud") {
+      if (!scWidget || !scReady) return;
+      scWidget.getPosition((posMs) => {
+        scWidget.getDuration((durMs) => {
+          const current = (posMs || 0) / 1000;
+          const duration = (durMs || 0) / 1000;
+          emit("progress", { current, duration });
+          if (duration > 0) emit("duration", { youtubeId: songKey(song), seconds: duration });
+        });
+      });
+    } else {
+      if (!ytReady || !hasLoaded) return;
+      try {
+        if (typeof ytPlayer.getVideoData === "function") {
+          const data = ytPlayer.getVideoData();
+          if (data && data.video_id && data.video_id !== song.youtubeId) return;
+        }
+      } catch (_) {}
+      const current = ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() || 0 : 0;
+      const duration = ytPlayer.getDuration ? ytPlayer.getDuration() || 0 : 0;
+      emit("progress", { current, duration });
+    }
   }
 
   function startProgressTimer() {
@@ -500,37 +534,50 @@ const Player = (() => {
     progressTimer = null;
   }
 
-  // ---- 8. Background duration probe -----------------------------------------------
-  // Playlist rows show each song's length. YouTube only reveals a video's
-  // length by loading it, so once music is already playing we quietly *cue*
-  // (never play) each song in a second, muted, hidden player and read its
-  // duration. app.js remembers the answers in localStorage. If a song can't be
-  // probed (embedding disabled...) it is simply skipped. Set false to disable.
-  const PROBE_DURATIONS = true;
-  let probing = false;
+  function init(initialQueue) {
+    if (Array.isArray(initialQueue)) queue = initialQueue;
+    if (initPromise) return initPromise;
+    initPromise = loadYouTubeAPI()
+      .then(createYouTubePlayer)
+      .catch((err) => {
+        initPromise = null;
+        pending = null;
+        console.error("Player init error:", err);
+        emit("buffering", { on: false });
+        emit("apierror", { message: err.message });
+        throw err;
+      });
+    return initPromise;
+  }
 
+  function retry(thenStart = true) {
+    if (thenStart) pending = "random";
+    emit("buffering", { on: true });
+    return init().catch(() => {});
+  }
+
+  function ensureBooting() {
+    if (!initPromise) init().catch(() => {});
+  }
+
+  // Background probe for YouTube songs
   function probeDurations(youtubeIds) {
-    if (!PROBE_DURATIONS || probing || !ytReady) return;
     const ids = [...new Set(youtubeIds)].filter(Boolean);
     const wrap = document.querySelector(".yt-wrap--probe");
-    if (!ids.length || !wrap) return;
-
+    if (!ids.length || !wrap || !ytReady) return;
     let holder = document.getElementById("yt-probe");
-    if (!holder) {                       // recreate after a previous destroy()
+    if (!holder) {
       holder = document.createElement("div");
       holder.id = "yt-probe";
       wrap.appendChild(holder);
     }
-
-    probing = true;
-    let probe = null;
     let i = 0;
     let poll = null;
+    let probe = null;
 
     const finish = () => {
       clearInterval(poll);
-      probing = false;
-      try { probe && probe.destroy(); } catch (_) { /* ignore */ }
+      try { probe && probe.destroy(); } catch (_) {}
     };
 
     const nextId = () => {
@@ -543,13 +590,11 @@ const Player = (() => {
         tries++;
         let seconds = 0;
         try {
-          // Only trust the answer once the probe really holds *this* video —
-          // right after cueing, getDuration() can still describe the previous one.
           const data = typeof probe.getVideoData === "function" ? probe.getVideoData() : null;
           if (!data || !data.video_id || data.video_id === id) seconds = probe.getDuration();
-        } catch (_) { /* keep waiting */ }
+        } catch (_) {}
         if (seconds > 0) { emit("duration", { youtubeId: id, seconds }); nextId(); }
-        else if (tries >= 16) nextId();   // ~4 s: give up on this one
+        else if (tries >= 16) nextId();
       }, 250);
     };
 
@@ -557,19 +602,16 @@ const Player = (() => {
       probe = new YT.Player("yt-probe", {
         height: "100%",
         width: "100%",
-        playerVars: buildPlayerVars(),
+        playerVars: { playsinline: 1, controls: 0, disablekb: 1 },
         events: {
           onReady: (e) => {
-            try { e.target.mute(); e.target.setVolume(0); } catch (_) { /* ignore */ }
+            try { e.target.mute(); e.target.setVolume(0); } catch (_) {}
             nextId();
           },
-          onError: () => nextId(),        // removed / embedding disabled: move on
+          onError: () => nextId(),
         },
       });
-    } catch (err) {
-      console.warn("Duration probe could not start:", err);
-      probing = false;
-    }
+    } catch (_) {}
   }
 
   return {
@@ -587,7 +629,6 @@ const Player = (() => {
     togglePlay,
     next,
     prev,
-
     seekTo,
     setVolume,
     isReady: () => ytReady,

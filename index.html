@@ -7,7 +7,6 @@
 <meta name="description" content="देसी घी — 100% खरा हरियाणवी स्वाद। एक डिजिटल हरियाणवी चौपाल जहाँ गाने लगातार बजते हैं।" />
 <meta name="theme-color" content="#1a0f08" />
 
-<!-- Add &display=swap to prevent invisible text and layout shifting -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Tiro+Devanagari+Hindi&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -23,9 +22,6 @@
 </head>
 <body>
 
-<!-- ============================================================
-     ENTRY OVERLAY (Change #3: Tightened spacing lockup)
-     ============================================================ -->
 <div class="entry-overlay" id="enter-overlay">
   <div class="entry-overlay__box">
     <p class="entry-overlay__eyebrow">राम राम भाई सारेया ने</p>
@@ -35,12 +31,6 @@
   </div>
 </div>
 
-<!-- ============================================================
-     HERO / SCENE (Change #1: Removed .scroll-cue)
-     ============================================================ -->
-<!-- ============================================================
-     HERO / SCENE (Change #1: Removed .scroll-cue)
-     ============================================================ -->
 <header class="scene" id="scene">
   <picture class="scene__picture">
     <source media="(max-width: 640px)" srcset="assets/images/hero-village-mobile.webp" />
@@ -74,9 +64,6 @@
   </div>
 </header>
 
-<!-- ============================================================
-     MOOD SECTION (3x2 Radio Grid)
-     ============================================================ -->
 <section class="section section--earth section--mood" id="mood-section">
   <div class="section__inner">
     <p class="section__eyebrow">आज का के मिजाज सै?</p>
@@ -86,9 +73,6 @@
   </div>
 </section>
 
-<!-- ============================================================
-     MARQUEE
-     ============================================================ -->
 <div class="marquee" aria-hidden="true">
   <div class="marquee__track" id="marquee-track">
     <span>दमदार बेस 🔥</span><span>खाट पै ठाठ</span><span>100% खरा हरियाणवी</span><span>हुक्का अर चिलम</span><span>खेत-क्यारी का रोब</span><span>कति देसी माहौल</span>
@@ -96,9 +80,6 @@
   </div>
 </div>
 
-<!-- ============================================================
-     ABOUT & CONTACT (Change #2 & Change #6)
-     ============================================================ -->
 <section class="section section--about" id="about">
   <div class="section__inner">
     <div class="about-card">
@@ -121,7 +102,6 @@
         स्वाद कति 100% खरा!
       </p>
 
-      <!-- Contact Us Block (Change #6) -->
       <div class="about__contact">
         <span class="about__contact-label">बातचीत या सुझाव खातर:</span>
         <a href="mailto:desighee02@gmail.com" class="about__contact-link">
@@ -132,9 +112,8 @@
         </a>
       </div>
 
-      <!-- Disclaimer: audio is YouTube-embedded only, rights stay with the artists/labels -->
       <p class="about__disclaimer">
-        ध्यान राखो: हरेक गाणा सीधा YouTube के official embedded player पर बजै सै — इस साइट पर कोए ऑडियो
+        ध्यान राखो: हरेक गाणा सीधा official embedded player पर बजै सै — इस साइट पर कोए ऑडियो
         host कोन्या अर ना ए कोए डाउनलोड होवै सै। हरेक गाणे का पूरा हक असली गायक, म्यूज़िक लेबल अर लिखणीये
         का ए रहवै सै। <strong>देसी घी</strong> एक फैन-मेड ट्रिब्यूट सै — यो किसे भी कलाकार, लेबल या चैनल का
         official page कोन्या, अर ना ए किसे तै जुड़ी़ या मान्यता-प्राप्त सै।
@@ -146,21 +125,23 @@
 <footer class="footer">
   <div class="footer__inner">
     <p class="footer__brand">देसी घी</p>
-    <p class="footer__line">कति खरा, कति देसी • Powered by YouTube official playback</p>
+    <p class="footer__line">कति खरा, कति देसी • Powered by official playback</p>
     <p class="footer__disclaimer">Fan-made tribute project • Not affiliated with or endorsed by any artist or label</p>
   </div>
 </footer>
 
+<!-- Hidden audio players -->
 <div class="yt-wrap" aria-hidden="true">
   <div id="yt-player"></div>
 </div>
 <div class="yt-wrap yt-wrap--probe" aria-hidden="true">
   <div id="yt-probe"></div>
 </div>
+<div class="yt-wrap" aria-hidden="true">
+  <iframe id="sc-player" title="SoundCloud player" scrolling="no" frameborder="no" allow="autoplay"
+    src="about:blank"></iframe>
+</div>
 
-<!-- ============================================================
-     PLAYER DOCK (Change #5 & Change #7: Scaled up with 16:9 Thumbnail)
-     ============================================================ -->
 <section class="dock" id="player-dock" aria-label="म्यूज़िक प्लेयर">
   <div class="dock__toast" id="dock-toast" role="status" aria-live="polite">
     <span class="dock__toast-text" id="dock-toast-text"></span>

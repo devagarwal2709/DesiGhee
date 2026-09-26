@@ -76,6 +76,102 @@ const songs = [
   { id: 163, title: "Laad Piya Ke", artist: "Sapna Choudhary", youtubeId: "JdUXW69YYg0", category: "tractor" },
   { id: 164, title: "4G Ka Jamana", artist: "Sapna Choudhary", youtubeId: "XjGEJDig1uo", category: "tractor" },
   { id: 165, title: "Balam", artist: "Sapna Choudhary", youtubeId: "fXYJ68s7vfA", category: "tractor" },
+  {
+    id: 201,
+    title: "Do Numbari",
+    artist: "Dhanda Nyoliwala",
+    source: "soundcloud",
+    soundcloudUrl: "https://soundcloud.com/bollywood-top/do-numbari-dhanda-nyoliwala",
+    category: "hukka"
+  },
+  {
+    id: 202,
+    title: "Kath Lagda x Bodyguard x Hood",
+    artist: "Dhanda Nyoliwala",
+    source: "soundcloud",
+    soundcloudUrl: "https://soundcloud.com/trend-catch-309053658/kath-lagda-x-bodyguard-x-hood",
+    category: "hukka"
+  },
+  {
+    id: 203,
+    title: "Boom Shaka Laka x KR$NA",
+    artist: "Dhanda Nyoliwala x KR$NA",
+    source: "soundcloud",
+    soundcloudUrl: "https://soundcloud.com/mutantsrecords-782367519/boom-shaka-kr-na-x-dhanda",
+    category: "hukka"
+  },
+  {
+    id: 204,
+    title: "Not Guilty",
+    artist: "Dhanda Nyoliwala",
+    source: "soundcloud",
+    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/not-guilty-dhanda-nyoliwala",
+    category: "hukka"
+  },
+  {
+    id: 205,
+    title: "Zigane",
+    artist: "Dhanda Nyoliwala",
+    source: "soundcloud",
+    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/zigane-dhanda-nyoliwala",
+    category: "hukka"
+  },
+  {
+    id: 206,
+    title: "Maruti",
+    artist: "Dhanda Nyoliwala",
+    source: "soundcloud",
+    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/maruti",
+    category: "hukka"
+  },
+  {
+    id: 207,
+    title: "Ego Killer",
+    artist: "Dhanda Nyoliwala",
+    source: "soundcloud",
+    soundcloudUrl: "https://soundcloud.com/ra-gaming-925825101/ego-killer-dhanda-nyoliwala",
+    category: "hukka"
+  },
+  {
+    id: 208,
+    title: "No Fluke",
+    artist: "Dhanda Nyoliwala",
+    source: "soundcloud",
+    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/no-fluke",
+    category: "hukka"
+  },
+  {
+    id: 209,
+    title: "La La La",
+    artist: "Dhanda Nyoliwala",
+    source: "soundcloud",
+    soundcloudUrl: "https://soundcloud.com/officialarstudioz/la-la-la-dhanda-nyoliwala-new",
+    category: "hukka"
+  },
+  {
+    id: 210,
+    title: "Russian Bandana",
+    artist: "Dhanda Nyoliwala",
+    source: "soundcloud",
+    soundcloudUrl: "https://soundcloud.com/dhanda-nyoliwala-on-top/2279853a-f17b-4840-8339-054d36cb5e61",
+    category: "hukka"
+  },
+  {
+    id: 211,
+    title: "Surrey BC",
+    artist: "Dhanda Nyoliwala",
+    source: "soundcloud",
+    soundcloudUrl: "https://soundcloud.com/songs-891847424/surrey-bc-dhanda-nyoliwala",
+    category: "hukka"
+  },
+  {
+    id: 212,
+    title: "Knife Brows",
+    artist: "Dhanda Nyoliwala x Bohemia",
+    source: "soundcloud",
+    soundcloudUrl: "https://soundcloud.com/prodbysidsmusic/knife-brows-dhanda-nyoliwala-x-bohemia-sids-music",
+    category: "hukka"
+  },
 ];
 
 function getCategoryMeta(categoryId) {

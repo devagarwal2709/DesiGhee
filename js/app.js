@@ -2,12 +2,9 @@
   app.js
   ------
   Wires the DOM up to Player (player.js) and songs/CATEGORIES (songs.js).
-  This file does NOT talk to YouTube directly — it only calls Player.*
-  and listens to Player.on(...) events.
 */
 
 document.addEventListener("DOMContentLoaded", () => {
-  // ---- DOM references -----------------------------------------------------
   const $ = (id) => document.getElementById(id);
 
   const enterOverlay  = $("enter-overlay");
@@ -36,15 +33,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const ALL_LABEL     = "सारे";
 
-  // Visual background positioning for the 3x2 mood cards
   const MOOD_ART = {
-  all:     "assets/images/mood-all.webp",
-  banger:  "assets/images/mood-banger.webp",
-  tractor: "assets/images/mood-tractor.webp",
-  hukka:   "assets/images/mood-hukka.webp",
-  byah:    "assets/images/mood-byah.webp",
-  akhada:  "assets/images/mood-akhada.webp",
-};
+    all:     "assets/images/mood-all.webp",
+    banger:  "assets/images/mood-banger.webp",
+    tractor: "assets/images/mood-tractor.webp",
+    hukka:   "assets/images/mood-hukka.webp",
+    byah:    "assets/images/mood-byah.webp",
+    akhada:  "assets/images/mood-akhada.webp",
+  };
 
   let activeCategory = "all";
   let isSeeking = false;
@@ -60,13 +56,15 @@ document.addEventListener("DOMContentLoaded", () => {
   function learnDuration(song, seconds) {
     if (!song || !(seconds > 0) || song.duration) return;
     const rounded = Math.round(seconds);
-    if (learnedDurations[song.youtubeId] === rounded) return;
-    learnedDurations[song.youtubeId] = rounded;
+    const key = song.source === "soundcloud" ? song.soundcloudUrl : song.youtubeId;
+    if (learnedDurations[key] === rounded) return;
+    learnedDurations[key] = rounded;
     try { localStorage.setItem(DURATION_KEY, JSON.stringify(learnedDurations)); } catch (_) {}
   }
 
-  function learnDurationById(youtubeId, seconds) {
-    learnDuration(songs.find((s) => s.youtubeId === youtubeId), seconds);
+  function learnDurationById(idOrUrl, seconds) {
+    const s = songs.find((x) => x.youtubeId === idOrUrl || x.soundcloudUrl === idOrUrl || `sc:${x.soundcloudUrl}` === idOrUrl);
+    if (s) learnDuration(s, seconds);
   }
 
   // ---- Helpers --------------------------------------------------------------
@@ -75,10 +73,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const m = Math.floor(sec / 60);
     const s = Math.floor(sec % 60).toString().padStart(2, "0");
     return `${m}:${s}`;
-  }
-
-  function thumbnailUrl(youtubeId) {
-    return `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
   }
 
   function songsForCategory(catId) {
@@ -124,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("resize", syncDockHeight);
   syncDockHeight();
 
-  // ---- Whitelisted 6 Categories ---------------------------------------------
+  // ---- Whitelisted Categories -----------------------------------------------
   function allCategories() {
     const allowed = [
       { id: "banger",  label: "बेंगर",        emoji: "🔥" },
@@ -149,27 +143,25 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Change #4: Mood cards render cleanly without "15 गाने" / "जल्दी आ रहे हैं"
   function renderMoodCards() {
-  moodGrid.innerHTML = "";
-  allCategories().forEach((cat) => {
-    const bgUrl = MOOD_ART[cat.id] || MOOD_ART.all;
-    const card = document.createElement("button");
-    card.type = "button";
-    card.className = "mood-card" + (cat.id === activeCategory ? " mood-card--active" : "");
-    card.setAttribute("aria-pressed", cat.id === activeCategory ? "true" : "false");
-    card.innerHTML = `
-      <span class="mood-card__bg" style="background-image: url('${bgUrl}');" aria-hidden="true"></span>
-      <span class="mood-card__icon" aria-hidden="true">${cat.emoji}</span>
-      <span class="mood-card__text">
-        <span class="mood-card__label">${cat.label}</span>
-      </span>`;
-    card.addEventListener("click", () => selectCategory(cat.id));
-    moodGrid.appendChild(card);
-  });
-}
+    moodGrid.innerHTML = "";
+    allCategories().forEach((cat) => {
+      const bgUrl = MOOD_ART[cat.id] || MOOD_ART.all;
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "mood-card" + (cat.id === activeCategory ? " mood-card--active" : "");
+      card.setAttribute("aria-pressed", cat.id === activeCategory ? "true" : "false");
+      card.innerHTML = `
+        <span class="mood-card__bg" style="background-image: url('${bgUrl}');" aria-hidden="true"></span>
+        <span class="mood-card__icon" aria-hidden="true">${cat.emoji}</span>
+        <span class="mood-card__text">
+          <span class="mood-card__label">${cat.label}</span>
+        </span>`;
+      card.addEventListener("click", () => selectCategory(cat.id));
+      moodGrid.appendChild(card);
+    });
+  }
 
-  // Instant Radio-Style Playback
   function selectCategory(catId) {
     activeCategory = catId;
     const list = songsForCategory(catId);
@@ -189,9 +181,14 @@ document.addEventListener("DOMContentLoaded", () => {
   nowThumbImg.addEventListener("load",  () => nowThumb.classList.add("has-img"));
   nowThumbImg.addEventListener("error", () => nowThumb.classList.remove("has-img"));
 
-  function setThumbnail(youtubeId) {
+  function setThumbnail(song) {
     nowThumb.classList.remove("has-img");
-    nowThumbImg.src = thumbnailUrl(youtubeId);
+    if (!song) return;
+    if (song.source === "soundcloud") {
+      nowThumbImg.src = song.thumb || "assets/images/hero-village.webp";
+    } else {
+      nowThumbImg.src = `https://img.youtube.com/vi/${song.youtubeId}/hqdefault.jpg`;
+    }
   }
 
   // ---- Player Subscriptions -------------------------------------------------
@@ -199,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!song) return;
     nowTitle.textContent = song.title;
     nowArtist.textContent = song.artist;
-    setThumbnail(song.youtubeId);
+    setThumbnail(song);
     seekBar.value = 0;
     seekBar.max = 0;
     paintRange(seekBar);
@@ -240,7 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!playing || probeScheduled) return;
     probeScheduled = true;
     setTimeout(() => {
-      const unknown = songs.filter((s) => !s.duration && !learnedDurations[s.youtubeId]).map((s) => s.youtubeId);
+      const unknown = songs.filter((s) => s.source !== "soundcloud" && !s.duration && !learnedDurations[s.youtubeId]).map((s) => s.youtubeId);
       if (unknown.length) Player.probeDurations(unknown);
     }, 2500);
   });
@@ -256,7 +253,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (skipping) {
       showToast(`${name} नहीं चल पाया — अगला चला रहे हैं…`, { duration: 4500 });
     } else if (code === 153) {
-      showToast("प्लेयर सेटअप में दिक्कत है — साइट को file:// की जगह http:// (Live Server) से खोलो।");
+      showToast("प्लेयर सेटअप में दिक्कत है — साइट को http:// (Live Server) से खोलो।");
     } else {
       showToast(`${name} नहीं चल पाया।`, { duration: 4500 });
     }
@@ -320,11 +317,12 @@ document.addEventListener("DOMContentLoaded", () => {
   enterBtn.addEventListener("click", () => {
     enterOverlay.classList.add("is-leaving");
     setTimeout(() => enterOverlay.remove(), 900);
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     Player.setQueue(songs.slice());
     Player.start();
   });
 
-  // ---- Jugnu (Firefly) Field Effect ------------------------------------------
+  // ---- Jugnu Effect ---------------------------------------------------------
   function initJugnuEffect() {
     const canvas = $("jugnu-canvas");
     if (!canvas) return;
